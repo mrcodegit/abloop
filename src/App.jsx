@@ -262,228 +262,228 @@ export default function App() {
     if (window.Spotify) createPlayer();
 
     return (
-    <main className="spotifyShell">
-      <aside className="sidebar">
-        <div className="brandDot" />
-        <h1>AB Loop</h1>
-        <p>Spotify-inspired practice player</p>
+      <main className="spotifyShell">
+        <aside className="sidebar">
+          <div className="brandDot" />
+          <h1>AB Loop</h1>
+          <p>Spotify-inspired practice player</p>
 
-        <div className="sideCard">
-          <p className="small">Status</p>
-          <p className={tokenExpired ? "error" : "ok"}>
-            {tokenExpired ? "Token wygasł. Zaloguj się ponownie." : status}
-          </p>
-        </div>
+          <div className="sideCard">
+            <p className="small">Status</p>
+            <p className={tokenExpired ? "error" : "ok"}>
+              {tokenExpired ? "Token wygasł. Zaloguj się ponownie." : status}
+            </p>
+          </div>
 
-        <div className="sideCard">
-          <label>Spotify Client ID</label>
-          <input
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            placeholder="Client ID"
-          />
+          <div className="sideCard">
+            <label>Spotify Client ID</label>
+            <input
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              placeholder="Client ID"
+            />
 
-          <p className="small">
-            Redirect URI:
-            <br />
-            <span className="mono">{redirectUri}</span>
-          </p>
+            <p className="small">
+              Redirect URI:
+              <br />
+              <span className="mono">{redirectUri}</span>
+            </p>
 
-          <div className="row">
-            {!token ? (
-              <button onClick={login} disabled={busy}>
-                Login
+            <div className="row">
+              {!token ? (
+                <button onClick={login} disabled={busy}>
+                  Login
+                </button>
+              ) : (
+                <button className="danger" onClick={logout}>
+                  Logout
+                </button>
+              )}
+
+              <button
+                className="secondary"
+                onClick={transferPlayback}
+                disabled={!token || !deviceId || busy}
+              >
+                Użyj playera
               </button>
+            </div>
+          </div>
+        </aside>
+
+        <section className="mainView">
+          <header className="topBar">
+            <form onSubmit={searchTracks} className="searchBar">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Czego chcesz posłuchać?"
+              />
+              <button disabled={!token || searching || !query.trim()}>
+                {searching ? "Szukam..." : "Szukaj"}
+              </button>
+            </form>
+          </header>
+
+          <section className="hero">
+            <div>
+              <p className="eyebrow">A–B loop player</p>
+              <h2>Wyszukaj utwór i ćwicz wybrany fragment.</h2>
+              <p>
+                Kliknij track, ustaw A/B na dolnym playerze i zapętlaj fragment.
+              </p>
+            </div>
+          </section>
+
+          <section className="results">
+            <h3>Wyniki</h3>
+
+            {results.length === 0 ? (
+              <p className="emptyState">
+                Wpisz nazwę piosenki, artysty albo albumu.
+              </p>
             ) : (
-              <button className="danger" onClick={logout}>
-                Logout
-              </button>
+              <div className="trackList">
+                {results.map((item, index) => (
+                  <button
+                    key={item.id}
+                    className="trackRow"
+                    onClick={() => playTrack(item.uri)}
+                  >
+                    <span className="trackIndex">{index + 1}</span>
+
+                    {item.album?.images?.[2]?.url || item.album?.images?.[0]?.url ? (
+                      <img
+                        src={item.album?.images?.[2]?.url || item.album?.images?.[0]?.url}
+                        alt=""
+                      />
+                    ) : (
+                      <span className="miniCover" />
+                    )}
+
+                    <span className="trackMeta">
+                      <b>{item.name}</b>
+                      <small>{item.artists?.map((artist) => artist.name).join(", ")}</small>
+                    </span>
+
+                    <span className="albumName">{item.album?.name}</span>
+                    <span className="durationText">{msToTime(item.duration_ms)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="settingsPanel">
+            <h3>Ustawienia pętli</h3>
+
+            <div className="grid">
+              <div>
+                <label>A start</label>
+                <input value={aInput} onChange={(e) => setAInput(e.target.value)} />
+                <button className="secondary" onClick={setAHere} style={{ marginTop: 10 }}>
+                  Ustaw A tutaj
+                </button>
+              </div>
+
+              <div>
+                <label>B koniec</label>
+                <input value={bInput} onChange={(e) => setBInput(e.target.value)} />
+                <button className="secondary" onClick={setBHere} style={{ marginTop: 10 }}>
+                  Ustaw B tutaj
+                </button>
+              </div>
+            </div>
+
+            <p>
+              Loop: <b>{msToTime(aMs)}</b> → <b>{msToTime(bMs)}</b>
+            </p>
+            {!validLoop && <p className="error">B musi być później niż A.</p>}
+          </section>
+        </section>
+
+        <footer className="bottomPlayer">
+          <div className="nowPlaying">
+            {track?.album?.images?.[0]?.url ? (
+              <img src={track.album.images[0].url} alt="" />
+            ) : (
+              <div className="footerCover" />
             )}
 
-            <button
-              className="secondary"
-              onClick={transferPlayback}
-              disabled={!token || !deviceId || busy}
-            >
-              Użyj playera
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      <section className="mainView">
-        <header className="topBar">
-          <form onSubmit={searchTracks} className="searchBar">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Czego chcesz posłuchać?"
-            />
-            <button disabled={!token || searching || !query.trim()}>
-              {searching ? "Szukam..." : "Szukaj"}
-            </button>
-          </form>
-        </header>
-
-        <section className="hero">
-          <div>
-            <p className="eyebrow">A–B loop player</p>
-            <h2>Wyszukaj utwór i ćwicz wybrany fragment.</h2>
-            <p>
-              Kliknij track, ustaw A/B na dolnym playerze i zapętlaj fragment.
-            </p>
-          </div>
-        </section>
-
-        <section className="results">
-          <h3>Wyniki</h3>
-
-          {results.length === 0 ? (
-            <p className="emptyState">
-              Wpisz nazwę piosenki, artysty albo albumu.
-            </p>
-          ) : (
-            <div className="trackList">
-              {results.map((item, index) => (
-                <button
-                  key={item.id}
-                  className="trackRow"
-                  onClick={() => playTrack(item.uri)}
-                >
-                  <span className="trackIndex">{index + 1}</span>
-
-                  {item.album?.images?.[2]?.url || item.album?.images?.[0]?.url ? (
-                    <img
-                      src={item.album?.images?.[2]?.url || item.album?.images?.[0]?.url}
-                      alt=""
-                    />
-                  ) : (
-                    <span className="miniCover" />
-                  )}
-
-                  <span className="trackMeta">
-                    <b>{item.name}</b>
-                    <small>{item.artists?.map((artist) => artist.name).join(", ")}</small>
-                  </span>
-
-                  <span className="albumName">{item.album?.name}</span>
-                  <span className="durationText">{msToTime(item.duration_ms)}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="settingsPanel">
-          <h3>Ustawienia pętli</h3>
-
-          <div className="grid">
             <div>
-              <label>A start</label>
-              <input value={aInput} onChange={(e) => setAInput(e.target.value)} />
-              <button className="secondary" onClick={setAHere} style={{ marginTop: 10 }}>
-                Ustaw A tutaj
+              <b>{track?.name || "Brak utworu"}</b>
+              <small>
+                {track?.artists?.map((artist) => artist.name).join(", ") ||
+                  "Wybierz utwór z wyników"}
+              </small>
+            </div>
+          </div>
+
+          <div className="footerCenter">
+            <div className="playerButtons compact">
+              <button className="secondary" onClick={togglePlay} disabled={!connected}>
+                {paused ? "Play" : "Pause"}
+              </button>
+
+              <button onClick={() => setLoopOn((x) => !x)} disabled={!token || !validLoop}>
+                {loopOn ? "Loop ON" : "Loop OFF"}
+              </button>
+
+              <button className="secondary" onClick={jumpToA} disabled={!token || !validLoop}>
+                A
               </button>
             </div>
 
-            <div>
-              <label>B koniec</label>
-              <input value={bInput} onChange={(e) => setBInput(e.target.value)} />
-              <button className="secondary" onClick={setBHere} style={{ marginTop: 10 }}>
-                Ustaw B tutaj
-              </button>
-            </div>
-          </div>
+            <div className="timeline footerTimeline">
+              <div className="progress">
+                <div
+                  className="loopRange"
+                  style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
+                />
+                <div
+                  className="progressFill"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
 
-          <p>
-            Loop: <b>{msToTime(aMs)}</b> → <b>{msToTime(bMs)}</b>
-          </p>
-          {!validLoop && <p className="error">B musi być później niż A.</p>}
-        </section>
-      </section>
-
-      <footer className="bottomPlayer">
-        <div className="nowPlaying">
-          {track?.album?.images?.[0]?.url ? (
-            <img src={track.album.images[0].url} alt="" />
-          ) : (
-            <div className="footerCover" />
-          )}
-
-          <div>
-            <b>{track?.name || "Brak utworu"}</b>
-            <small>
-              {track?.artists?.map((artist) => artist.name).join(", ") ||
-                "Wybierz utwór z wyników"}
-            </small>
-          </div>
-        </div>
-
-        <div className="footerCenter">
-          <div className="playerButtons compact">
-            <button className="secondary" onClick={togglePlay} disabled={!connected}>
-              {paused ? "Play" : "Pause"}
-            </button>
-
-            <button onClick={() => setLoopOn((x) => !x)} disabled={!token || !validLoop}>
-              {loopOn ? "Loop ON" : "Loop OFF"}
-            </button>
-
-            <button className="secondary" onClick={jumpToA} disabled={!token || !validLoop}>
-              A
-            </button>
-          </div>
-
-          <div className="timeline footerTimeline">
-            <div className="progress">
-              <div
-                className="loopRange"
-                style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
+              <input
+                aria-label="Punkt A"
+                type="range"
+                min="0"
+                max={timelineMax}
+                step="0.1"
+                value={aMs / 1000}
+                onChange={(e) => setAInput(e.target.value)}
+                className="timelineRange rangeA"
               />
-              <div
-                className="progressFill"
-                style={{ width: `${progressPct}%` }}
+
+              <input
+                aria-label="Punkt B"
+                type="range"
+                min="0"
+                max={timelineMax}
+                step="0.1"
+                value={bMs / 1000}
+                onChange={(e) => setBInput(e.target.value)}
+                className="timelineRange rangeB"
               />
+
+              <div className="marker markerA" style={{ left: `${loopLeft}%` }}>
+                A
+              </div>
+
+              <div className="marker markerB" style={{ left: `${loopLeft + loopWidth}%` }}>
+                B
+              </div>
             </div>
 
-            <input
-              aria-label="Punkt A"
-              type="range"
-              min="0"
-              max={timelineMax}
-              step="0.1"
-              value={aMs / 1000}
-              onChange={(e) => setAInput(e.target.value)}
-              className="timelineRange rangeA"
-            />
-
-            <input
-              aria-label="Punkt B"
-              type="range"
-              min="0"
-              max={timelineMax}
-              step="0.1"
-              value={bMs / 1000}
-              onChange={(e) => setBInput(e.target.value)}
-              className="timelineRange rangeB"
-            />
-
-            <div className="marker markerA" style={{ left: `${loopLeft}%` }}>
-              A
-            </div>
-
-            <div className="marker markerB" style={{ left: `${loopLeft + loopWidth}%` }}>
-              B
+            <div className="footerTime">
+              <span>{msToTime(position)}</span>
+              <span>A {msToTime(aMs)} · B {msToTime(bMs)}</span>
+              <span>{msToTime(duration)}</span>
             </div>
           </div>
-
-          <div className="footerTime">
-            <span>{msToTime(position)}</span>
-            <span>A {msToTime(aMs)} · B {msToTime(bMs)}</span>
-            <span>{msToTime(duration)}</span>
-          </div>
-        </div>
-      </footer>
-    </main>
-  );
-}
+        </footer>
+      </main>
+    );
+  })
