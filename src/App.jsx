@@ -262,6 +262,18 @@ export default function App() {
       setPosition(now);
       setPaused(Boolean(state.paused));
 
+      if (!loopOn && duration && now >= duration - 900) {
+        try {
+          await player.pause();
+          await apiFetch(`/me/player/seek?position_ms=${Math.max(0, duration - 1200)}`, tokenRef.current, {
+            method: "PUT"
+          });
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+
       if (!loopOn || state.paused || !validLoop) return;
 
       if (now >= bMs && Date.now() - lastSeekRef.current > 650) {
@@ -371,6 +383,24 @@ export default function App() {
   async function jumpToA() {
     if (!token || !validLoop) return;
     await jumpTo(aMs);
+  }
+
+  async function moveAAndSeek(value) {
+    setAInput(value);
+
+    if (!token) return;
+
+    const nextMs = parseTime(value);
+    await jumpTo(nextMs);
+  }
+
+  async function moveBAndSeek(value) {
+    setBInput(value);
+
+    if (!token) return;
+
+    const nextMs = parseTime(value);
+    await jumpTo(nextMs);
   }
 
   function clearLoop() {
@@ -533,7 +563,7 @@ export default function App() {
             max={timelineMax}
             step="0.1"
             value={aMs / 1000}
-            onChange={(e) => setAInput(e.target.value)}
+            onChange={(e) => moveAAndSeek(e.target.value)}
             className="abRange aRange"
           />
 
@@ -544,7 +574,7 @@ export default function App() {
             max={timelineMax}
             step="0.1"
             value={bMs / 1000}
-            onChange={(e) => setBInput(e.target.value)}
+            onChange={(e) => moveBAndSeek(e.target.value)}
             className="abRange bRange"
           />
 
