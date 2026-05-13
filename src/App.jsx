@@ -102,6 +102,9 @@ export default function App() {
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState("Wpisz Client ID i zaloguj się.");
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   const [track, setTrack] = useState(null);
   const [paused, setPaused] = useState(true);
@@ -258,315 +261,229 @@ export default function App() {
     window.onSpotifyWebPlaybackSDKReady = createPlayer;
     if (window.Spotify) createPlayer();
 
-    return () => {
-      mounted = false;
-    };
-  }, [token, expiresAt]);
+    return (
+    <main className="spotifyShell">
+      <aside className="sidebar">
+        <div className="brandDot" />
+        <h1>AB Loop</h1>
+        <p>Spotify-inspired practice player</p>
 
-  useEffect(() => {
-    if (!player || !token) return;
-
-    clearInterval(pollRef.current);
-
-    pollRef.current = setInterval(async () => {
-      const state = await player.getCurrentState().catch(() => null);
-      if (!state) return;
-
-      const now = state.position || 0;
-      setPosition(now);
-      setPaused(Boolean(state.paused));
-
-      if (!loopOn || state.paused || !validLoop) return;
-
-      if (now >= bMs && Date.now() - lastSeekRef.current > 650) {
-        lastSeekRef.current = Date.now();
-        try {
-          await apiFetch(`/me/player/seek?position_ms=${aMs}`, tokenRef.current, {
-            method: "PUT",
-          });
-        } catch (err) {
-          setStatus(`Seek error: ${err.message}`);
-        }
-      }
-    }, 180);
-
-    return () => clearInterval(pollRef.current);
-  }, [player, token, loopOn, aMs, bMs, validLoop]);
-
-  async function login() {
-    if (!clientId.trim()) {
-      setStatus("Najpierw wklej Client ID.");
-      return;
-    }
-
-    const verifier = randomString();
-    const challenge = base64Url(await sha256(verifier));
-
-    localStorage.setItem("spotify_client_id", clientId.trim());
-    localStorage.setItem("spotify_code_verifier", verifier);
-
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: clientId.trim(),
-      scope: SCOPES,
-      redirect_uri: redirectUri,
-      code_challenge_method: "S256",
-      code_challenge: challenge,
-    });
-
-    window.location.href = `${AUTH_URL}?${params.toString()}`;
-  }
-
-  function logout() {
-    player?.disconnect?.();
-
-    localStorage.removeItem("spotify_access_token");
-    localStorage.removeItem("spotify_expires_at");
-    localStorage.removeItem("spotify_code_verifier");
-
-    setToken("");
-    setExpiresAt(0);
-    setPlayer(null);
-    setDeviceId("");
-    setConnected(false);
-    setTrack(null);
-    setStatus("Wylogowano.");
-  }
-
-  async function transferPlayback() {
-    if (!deviceId) return;
-
-    setBusy(true);
-    try {
-      await apiFetch("/me/player", token, {
-        method: "PUT",
-        body: JSON.stringify({
-          device_ids: [deviceId],
-          play: false,
-        }),
-      });
-      setStatus("OK. Teraz włącz piosenkę w Spotify albo kliknij Play.");
-    } catch (err) {
-      setStatus(`Nie udało się użyć playera: ${err.message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function togglePlay() {
-    await player?.togglePlay?.();
-  }
-
-  async function jumpToA() {
-    if (!token || !validLoop) return;
-    await apiFetch(`/me/player/seek?position_ms=${aMs}`, token, { method: "PUT" });
-  }
-
-  function setAHere() {
-    setAInput((position / 1000).toFixed(1));
-  }
-
-  function setBHere() {
-    setBInput((position / 1000).toFixed(1));
-  }
-
-  const progressPct = duration ? Math.min(100, (position / duration) * 100) : 0;
-  const loopLeft = duration ? Math.min(100, (aMs / duration) * 100) : 0;
-  const loopWidth = duration ? Math.max(0, ((bMs - aMs) / duration) * 100) : 0;
-  const tokenExpired = token && Date.now() > expiresAt;
-  const timelineMax = Math.max(60, duration / 1000, bMs / 1000 + 5);
-
-  return (
-    <main className="app">
-      <h1>Spotify A-B Loop Lite</h1>
-      <p>
-        Lekka wersja z prawdziwym Spotify: React + Vite, bez Tailwind i bez shadcn.
-      </p>
-
-      <section className="card">
-        <label>Spotify Client ID</label>
-        <input
-          value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          placeholder="Wklej Client ID z Spotify Developer Dashboard"
-        />
-
-        <p className="small">
-          W Spotify Developer Dashboard dodaj Redirect URI:
-          <br />
-          <span className="mono">{redirectUri}</span>
-        </p>
-
-        <div className="row">
-          {!token ? (
-            <button onClick={login} disabled={busy}>
-              Login Spotify
-            </button>
-          ) : (
-            <button className="danger" onClick={logout}>
-              Logout
-            </button>
-          )}
-
-          <button
-            className="secondary"
-            onClick={transferPlayback}
-            disabled={!token || !deviceId || busy}
-          >
-            Użyj tego playera
-          </button>
-
-          <button
-            className="secondary"
-            onClick={togglePlay}
-            disabled={!connected}
-          >
-            {paused ? "Play" : "Pause"}
-          </button>
+        <div className="sideCard">
+          <p className="small">Status</p>
+          <p className={tokenExpired ? "error" : "ok"}>
+            {tokenExpired ? "Token wygasł. Zaloguj się ponownie." : status}
+          </p>
         </div>
 
-        <p className={tokenExpired ? "error" : "ok"}>{tokenExpired ? "Token wygasł. Zaloguj się ponownie." : status}</p>
-      </section>
+        <div className="sideCard">
+          <label>Spotify Client ID</label>
+          <input
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            placeholder="Client ID"
+          />
 
-      <section className="card topPlayer">
-        <div className="topPlayerRow">
-          {track?.album?.images?.[0]?.url ? (
-            <img className="cover topCover" src={track.album.images[0].url} alt="Album cover" />
-          ) : (
-            <div className="cover topCover" />
-          )}
+          <p className="small">
+            Redirect URI:
+            <br />
+            <span className="mono">{redirectUri}</span>
+          </p>
 
-          <div className="topContent">
-            <p className="small">Aktualny utwór</p>
-            <h2>{track?.name || "Brak utworu"}</h2>
-            <p>{track?.artists?.map((artist) => artist.name).join(", ") || "Włącz piosenkę w Spotify."}</p>
-
-            <div className="playerButtons">
-              <button className="secondary" onClick={togglePlay} disabled={!connected}>
-                {paused ? "Play" : "Pause"}
+          <div className="row">
+            {!token ? (
+              <button onClick={login} disabled={busy}>
+                Login
               </button>
-
-              <button
-                onClick={() => setLoopOn((x) => !x)}
-                disabled={!token || !validLoop}
-              >
-                {loopOn ? "Loop ON" : "Loop OFF"}
+            ) : (
+              <button className="danger" onClick={logout}>
+                Logout
               </button>
+            )}
 
-              <button className="secondary" onClick={jumpToA} disabled={!token || !validLoop}>
-                Skocz do A
-              </button>
-            </div>
+            <button
+              className="secondary"
+              onClick={transferPlayback}
+              disabled={!token || !deviceId || busy}
+            >
+              Użyj playera
+            </button>
+          </div>
+        </div>
+      </aside>
 
-            <div className="timeline">
-              <div className="progress">
-                <div
-                  className="loopRange"
-                  style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
-                />
-                <div
-                  className="progressFill"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
+      <section className="mainView">
+        <header className="topBar">
+          <form onSubmit={searchTracks} className="searchBar">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Czego chcesz posłuchać?"
+            />
+            <button disabled={!token || searching || !query.trim()}>
+              {searching ? "Szukam..." : "Szukaj"}
+            </button>
+          </form>
+        </header>
 
-              <input
-                aria-label="Punkt A"
-                type="range"
-                min="0"
-                max={timelineMax}
-                step="0.1"
-                value={aMs / 1000}
-                onChange={(e) => setAInput(e.target.value)}
-                className="timelineRange rangeA"
-              />
-
-              <input
-                aria-label="Punkt B"
-                type="range"
-                min="0"
-                max={timelineMax}
-                step="0.1"
-                value={bMs / 1000}
-                onChange={(e) => setBInput(e.target.value)}
-                className="timelineRange rangeB"
-              />
-
-              <div className="marker markerA" style={{ left: `${loopLeft}%` }}>
-                A
-              </div>
-
-              <div className="marker markerB" style={{ left: `${loopLeft + loopWidth}%` }}>
-                B
-              </div>
-            </div>
-
-            <div className="rangeLabels">
-              <span>A: {msToTime(aMs)}</span>
-              <span>B: {msToTime(bMs)}</span>
-            </div>
-
-            <p className="small">
-              {msToTime(position)} / {msToTime(duration)}
+        <section className="hero">
+          <div>
+            <p className="eyebrow">A–B loop player</p>
+            <h2>Wyszukaj utwór i ćwicz wybrany fragment.</h2>
+            <p>
+              Kliknij track, ustaw A/B na dolnym playerze i zapętlaj fragment.
             </p>
           </div>
-        </div>
+        </section>
+
+        <section className="results">
+          <h3>Wyniki</h3>
+
+          {results.length === 0 ? (
+            <p className="emptyState">
+              Wpisz nazwę piosenki, artysty albo albumu.
+            </p>
+          ) : (
+            <div className="trackList">
+              {results.map((item, index) => (
+                <button
+                  key={item.id}
+                  className="trackRow"
+                  onClick={() => playTrack(item.uri)}
+                >
+                  <span className="trackIndex">{index + 1}</span>
+
+                  {item.album?.images?.[2]?.url || item.album?.images?.[0]?.url ? (
+                    <img
+                      src={item.album?.images?.[2]?.url || item.album?.images?.[0]?.url}
+                      alt=""
+                    />
+                  ) : (
+                    <span className="miniCover" />
+                  )}
+
+                  <span className="trackMeta">
+                    <b>{item.name}</b>
+                    <small>{item.artists?.map((artist) => artist.name).join(", ")}</small>
+                  </span>
+
+                  <span className="albumName">{item.album?.name}</span>
+                  <span className="durationText">{msToTime(item.duration_ms)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="settingsPanel">
+          <h3>Ustawienia pętli</h3>
+
+          <div className="grid">
+            <div>
+              <label>A start</label>
+              <input value={aInput} onChange={(e) => setAInput(e.target.value)} />
+              <button className="secondary" onClick={setAHere} style={{ marginTop: 10 }}>
+                Ustaw A tutaj
+              </button>
+            </div>
+
+            <div>
+              <label>B koniec</label>
+              <input value={bInput} onChange={(e) => setBInput(e.target.value)} />
+              <button className="secondary" onClick={setBHere} style={{ marginTop: 10 }}>
+                Ustaw B tutaj
+              </button>
+            </div>
+          </div>
+
+          <p>
+            Loop: <b>{msToTime(aMs)}</b> → <b>{msToTime(bMs)}</b>
+          </p>
+          {!validLoop && <p className="error">B musi być później niż A.</p>}
+        </section>
       </section>
 
-      <section className="card">
-        <div className="grid">
+      <footer className="bottomPlayer">
+        <div className="nowPlaying">
+          {track?.album?.images?.[0]?.url ? (
+            <img src={track.album.images[0].url} alt="" />
+          ) : (
+            <div className="footerCover" />
+          )}
+
           <div>
-            <label>A start</label>
-            <input value={aInput} onChange={(e) => setAInput(e.target.value)} />
-            <button className="secondary" onClick={setAHere} style={{ marginTop: 10 }}>
-              Ustaw A tutaj
+            <b>{track?.name || "Brak utworu"}</b>
+            <small>
+              {track?.artists?.map((artist) => artist.name).join(", ") ||
+                "Wybierz utwór z wyników"}
+            </small>
+          </div>
+        </div>
+
+        <div className="footerCenter">
+          <div className="playerButtons compact">
+            <button className="secondary" onClick={togglePlay} disabled={!connected}>
+              {paused ? "Play" : "Pause"}
+            </button>
+
+            <button onClick={() => setLoopOn((x) => !x)} disabled={!token || !validLoop}>
+              {loopOn ? "Loop ON" : "Loop OFF"}
+            </button>
+
+            <button className="secondary" onClick={jumpToA} disabled={!token || !validLoop}>
+              A
             </button>
           </div>
 
-          <div>
-            <label>B koniec</label>
-            <input value={bInput} onChange={(e) => setBInput(e.target.value)} />
-            <button className="secondary" onClick={setBHere} style={{ marginTop: 10 }}>
-              Ustaw B tutaj
-            </button>
+          <div className="timeline footerTimeline">
+            <div className="progress">
+              <div
+                className="loopRange"
+                style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
+              />
+              <div
+                className="progressFill"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+
+            <input
+              aria-label="Punkt A"
+              type="range"
+              min="0"
+              max={timelineMax}
+              step="0.1"
+              value={aMs / 1000}
+              onChange={(e) => setAInput(e.target.value)}
+              className="timelineRange rangeA"
+            />
+
+            <input
+              aria-label="Punkt B"
+              type="range"
+              min="0"
+              max={timelineMax}
+              step="0.1"
+              value={bMs / 1000}
+              onChange={(e) => setBInput(e.target.value)}
+              className="timelineRange rangeB"
+            />
+
+            <div className="marker markerA" style={{ left: `${loopLeft}%` }}>
+              A
+            </div>
+
+            <div className="marker markerB" style={{ left: `${loopLeft + loopWidth}%` }}>
+              B
+            </div>
+          </div>
+
+          <div className="footerTime">
+            <span>{msToTime(position)}</span>
+            <span>A {msToTime(aMs)} · B {msToTime(bMs)}</span>
+            <span>{msToTime(duration)}</span>
           </div>
         </div>
-
-        <p>
-          Loop: <b>{msToTime(aMs)}</b> → <b>{msToTime(bMs)}</b>
-        </p>
-
-        {!validLoop && <p className="error">B musi być później niż A.</p>}
-
-        <div className="row">
-          <button
-            onClick={() => setLoopOn((x) => !x)}
-            disabled={!token || !validLoop}
-          >
-            {loopOn ? "Loop ON" : "Loop OFF"}
-          </button>
-
-          <button
-            className="secondary"
-            onClick={jumpToA}
-            disabled={!token || !validLoop}
-          >
-            Skocz do A
-          </button>
-        </div>
-      </section>
-
-      <section className="card">
-        <h3>Jak odpalić</h3>
-        <pre className="mono">{`npm install
-npm run dev`}</pre>
-
-        <h3>Wymagania</h3>
-        <p>
-          Musisz mieć Spotify Premium. W aplikacji Spotify Developer dodaj dokładnie taki Redirect URI,
-          jaki widzisz wyżej. Przy lokalnym Vite zwykle będzie to <span className="mono">http://localhost:5173/</span>.
-        </p>
-      </section>
+      </footer>
     </main>
   );
 }
