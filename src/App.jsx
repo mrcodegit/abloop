@@ -385,20 +385,22 @@ export default function App() {
     await jumpTo(aMs);
   }
 
-  async function moveAAndSeek(value) {
+  function moveA(value) {
     setAInput(value);
+  }
 
+  function moveB(value) {
+    setBInput(value);
+  }
+
+  async function seekToARelease(value) {
     if (!token) return;
-
     const nextMs = parseTime(value);
     await jumpTo(nextMs);
   }
 
-  async function moveBAndSeek(value) {
-    setBInput(value);
-
+  async function seekToBRelease(value) {
     if (!token) return;
-
     const nextMs = parseTime(value);
     await jumpTo(nextMs);
   }
@@ -563,7 +565,9 @@ export default function App() {
             max={timelineMax}
             step="0.1"
             value={aMs / 1000}
-            onChange={(e) => moveAAndSeek(e.target.value)}
+            onChange={(e) => moveA(e.target.value)}
+            onMouseUp={(e) => seekToARelease(e.target.value)}
+            onTouchEnd={(e) => seekToARelease(e.target.value)}
             className="abRange aRange"
           />
 
@@ -574,7 +578,9 @@ export default function App() {
             max={timelineMax}
             step="0.1"
             value={bMs / 1000}
-            onChange={(e) => moveBAndSeek(e.target.value)}
+            onChange={(e) => moveB(e.target.value)}
+            onMouseUp={(e) => seekToBRelease(e.target.value)}
+            onTouchEnd={(e) => seekToBRelease(e.target.value)}
             className="abRange bRange"
           />
 
