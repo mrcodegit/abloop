@@ -440,24 +440,7 @@ export default function App() {
             <h2>{track?.name || "Brak utworu"}</h2>
             <p>{track?.artists?.map((artist) => artist.name).join(", ") || "Włącz piosenkę w Spotify."}</p>
 
-            <div className="progress">
-              <div
-                className="loopRange"
-                style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
-              />
-              <div
-                className="progressFill"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-
-            <div className="rangeBox">
-              <div className="rangeLabels">
-                <span>A: {msToTime(aMs)}</span>
-                <span>B: {msToTime(bMs)}</span>
-              </div>
-
-              <label className="small">Przesuń start pętli A</label>
+            <div className="sliderWrap">
               <input
                 type="range"
                 min="0"
@@ -465,9 +448,9 @@ export default function App() {
                 step="0.1"
                 value={aMs / 1000}
                 onChange={(e) => setAInput(e.target.value)}
+                className="rangeSlider rangeA"
               />
 
-              <label className="small">Przesuń koniec pętli B</label>
               <input
                 type="range"
                 min="0"
@@ -475,7 +458,24 @@ export default function App() {
                 step="0.1"
                 value={bMs / 1000}
                 onChange={(e) => setBInput(e.target.value)}
+                className="rangeSlider rangeB"
               />
+
+              <div className="progress">
+                <div
+                  className="loopRange"
+                  style={{ left: `${loopLeft}%`, width: `${loopWidth}%` }}
+                />
+                <div
+                  className="progressFill"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="rangeLabels">
+              <span>A: {msToTime(aMs)}</span>
+              <span>B: {msToTime(bMs)}</span>
             </div>
 
             <p className="small">
