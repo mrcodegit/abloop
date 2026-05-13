@@ -451,6 +451,33 @@ export default function App() {
               />
             </div>
 
+            <div className="rangeBox">
+              <div className="rangeLabels">
+                <span>A: {msToTime(aMs)}</span>
+                <span>B: {msToTime(bMs)}</span>
+              </div>
+
+              <label className="small">Przesuń start pętli A</label>
+              <input
+                type="range"
+                min="0"
+                max={Math.max(1, duration / 1000)}
+                step="0.1"
+                value={aMs / 1000}
+                onChange={(e) => setAInput(e.target.value)}
+              />
+
+              <label className="small">Przesuń koniec pętli B</label>
+              <input
+                type="range"
+                min="0"
+                max={Math.max(1, duration / 1000)}
+                step="0.1"
+                value={bMs / 1000}
+                onChange={(e) => setBInput(e.target.value)}
+              />
+            </div>
+
             <p className="small">
               {msToTime(position)} / {msToTime(duration)}
             </p>

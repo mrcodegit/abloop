@@ -158,3 +158,26 @@ button:disabled {
     aspect-ratio: 1 / 1;
   }
 }
+
+
+.rangeBox {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #333;
+  border-radius: 14px;
+  background: #141414;
+}
+
+.rangeBox input[type="range"] {
+  width: 100%;
+  accent-color: #1db954;
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #aaa;
+}
