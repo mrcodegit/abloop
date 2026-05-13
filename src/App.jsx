@@ -355,17 +355,49 @@ export default function App() {
   }
 
   async function transferPlayback() {
-    if (!deviceId) return;
+    if (!token) {
+      setStatus("Najpierw zaloguj się do Spotify.");
+      return;
+    }
+
     setBusy(true);
 
     try {
+      if (player) {
+        await player.activateElement().catch(() => {});
+        await player.connect().catch(() => {});
+      }
+
+      let targetDeviceId = deviceId;
+
+      if (!targetDeviceId) {
+        const devicesData = await apiFetch("/me/player/devices", token);
+        const sdkDevice = devicesData?.devices?.find((device) =>
+          device.name === "AB Loop Player" ||
+          device.name === "Spotify A-B Loop Lite" ||
+          device.name?.toLowerCase().includes("ab loop")
+        );
+
+        targetDeviceId = sdkDevice?.id || "";
+        if (targetDeviceId) setDeviceId(targetDeviceId);
+      }
+
+      if (!targetDeviceId) {
+        throw new Error("Nie znaleziono urządzenia AB Loop Player. Odśwież stronę i spróbuj ponownie.");
+      }
+
       await apiFetch("/me/player", token, {
         method: "PUT",
-        body: JSON.stringify({ device_ids: [deviceId], play: false }),
+        body: JSON.stringify({
+          device_ids: [targetDeviceId],
+          play: false
+        }),
       });
-      setStatus("OK. Wybierz utwór albo kliknij Play.");
+
+      setConnected(true);
+      setStatus("Połączono z AB Loop Player. Wybierz utwór albo kliknij Play.");
     } catch (err) {
-      setStatus(`Nie udało się użyć playera: ${err.message}`);
+      setStatus(`Nie udało się połączyć: ${err.message}`);
     } finally {
       setBusy(false);
     }
@@ -431,21 +463,29 @@ export default function App() {
   }
 
   async function playTrack(uri) {
-    if (!token || !deviceId) {
-      setStatus("Najpierw kliknij „Use Player”.");
+    if (!token) {
+      setStatus("Najpierw zaloguj się do Spotify.");
       setShowSettings(true);
       return;
     }
 
     try {
-      await apiFetch(`/me/player/play?device_id=${deviceId}`, token, {
+      let targetDeviceId = deviceId;
+
+      if (!targetDeviceId) {
+        await transferPlayback();
+        targetDeviceId = deviceId;
+      }
+
+      await apiFetch(`/me/player/play?device_id=${targetDeviceId || deviceId}`, token, {
         method: "PUT",
         body: JSON.stringify({ uris: [uri] }),
       });
+
       setStatus("Odtwarzam wybrany utwór.");
       setShowSearch(false);
     } catch (err) {
-      setStatus(`Play error: ${err.message}`);
+      setStatus(`Play error: ${err.message}. Kliknij Connect i spróbuj ponownie.`);
     }
   }
 
