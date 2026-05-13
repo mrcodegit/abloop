@@ -374,6 +374,7 @@ export default function App() {
   const loopLeft = duration ? Math.min(100, (aMs / duration) * 100) : 0;
   const loopWidth = duration ? Math.max(0, ((bMs - aMs) / duration) * 100) : 0;
   const tokenExpired = token && Date.now() > expiresAt;
+  const timelineMax = Math.max(60, duration / 1000, bMs / 1000 + 5);
 
   return (
     <main className="app">
@@ -427,40 +428,37 @@ export default function App() {
         <p className={tokenExpired ? "error" : "ok"}>{tokenExpired ? "Token wygasł. Zaloguj się ponownie." : status}</p>
       </section>
 
-      <section className="card">
-        <div className="track">
+      <section className="card topPlayer">
+        <div className="topPlayerRow">
           {track?.album?.images?.[0]?.url ? (
-            <img className="cover" src={track.album.images[0].url} alt="Album cover" />
+            <img className="cover topCover" src={track.album.images[0].url} alt="Album cover" />
           ) : (
-            <div className="cover" />
+            <div className="cover topCover" />
           )}
 
-          <div>
+          <div className="topContent">
             <p className="small">Aktualny utwór</p>
             <h2>{track?.name || "Brak utworu"}</h2>
             <p>{track?.artists?.map((artist) => artist.name).join(", ") || "Włącz piosenkę w Spotify."}</p>
 
-            <div className="sliderWrap">
-              <input
-                type="range"
-                min="0"
-                max={Math.max(1, duration / 1000)}
-                step="0.1"
-                value={aMs / 1000}
-                onChange={(e) => setAInput(e.target.value)}
-                className="rangeSlider rangeA"
-              />
+            <div className="playerButtons">
+              <button className="secondary" onClick={togglePlay} disabled={!connected}>
+                {paused ? "Play" : "Pause"}
+              </button>
 
-              <input
-                type="range"
-                min="0"
-                max={Math.max(1, duration / 1000)}
-                step="0.1"
-                value={bMs / 1000}
-                onChange={(e) => setBInput(e.target.value)}
-                className="rangeSlider rangeB"
-              />
+              <button
+                onClick={() => setLoopOn((x) => !x)}
+                disabled={!token || !validLoop}
+              >
+                {loopOn ? "Loop ON" : "Loop OFF"}
+              </button>
 
+              <button className="secondary" onClick={jumpToA} disabled={!token || !validLoop}>
+                Skocz do A
+              </button>
+            </div>
+
+            <div className="timeline">
               <div className="progress">
                 <div
                   className="loopRange"
@@ -470,6 +468,36 @@ export default function App() {
                   className="progressFill"
                   style={{ width: `${progressPct}%` }}
                 />
+              </div>
+
+              <input
+                aria-label="Punkt A"
+                type="range"
+                min="0"
+                max={timelineMax}
+                step="0.1"
+                value={aMs / 1000}
+                onChange={(e) => setAInput(e.target.value)}
+                className="timelineRange rangeA"
+              />
+
+              <input
+                aria-label="Punkt B"
+                type="range"
+                min="0"
+                max={timelineMax}
+                step="0.1"
+                value={bMs / 1000}
+                onChange={(e) => setBInput(e.target.value)}
+                className="timelineRange rangeB"
+              />
+
+              <div className="marker markerA" style={{ left: `${loopLeft}%` }}>
+                A
+              </div>
+
+              <div className="marker markerB" style={{ left: `${loopLeft + loopWidth}%` }}>
+                B
               </div>
             </div>
 

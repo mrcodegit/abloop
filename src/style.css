@@ -113,7 +113,6 @@ button:disabled {
   border-radius: 999px;
   background: #333;
   overflow: hidden;
-  margin-top: 18px;
 }
 
 .loopRange {
@@ -160,38 +159,17 @@ button:disabled {
 }
 
 
-.rangeBox {
-  margin-top: 18px;
-  padding: 14px;
-  border: 1px solid #333;
-  border-radius: 14px;
-  background: #141414;
-}
-
-.rangeBox input[type="range"] {
-  width: 100%;
-  accent-color: #1db954;
-}
-
-.rangeLabels {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #aaa;
-}
-
-
-.sliderWrap {
+.timeline {
   position: relative;
-  margin-top: 20px;
+  margin-top: 28px;
+  padding-top: 18px;
+  padding-bottom: 28px;
 }
 
-.rangeSlider {
+.timelineRange {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 18px;
   width: 100%;
   height: 22px;
   margin: 0;
@@ -199,26 +177,117 @@ button:disabled {
   pointer-events: none;
   -webkit-appearance: none;
   appearance: none;
+  z-index: 5;
 }
 
-.rangeSlider::-webkit-slider-thumb {
+.timelineRange::-webkit-slider-runnable-track {
+  height: 22px;
+  background: transparent;
+}
+
+.timelineRange::-moz-range-track {
+  height: 22px;
+  background: transparent;
+}
+
+.timelineRange::-webkit-slider-thumb {
   pointer-events: auto;
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
+  width: 22px;
+  height: 32px;
+  border-radius: 8px;
   background: #1db954;
-  border: 2px solid #fff;
-  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #111, 0 4px 12px rgba(0,0,0,0.6);
+  cursor: grab;
 }
 
-.rangeSlider::-moz-range-thumb {
+.timelineRange::-moz-range-thumb {
   pointer-events: auto;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
+  width: 22px;
+  height: 32px;
+  border-radius: 8px;
   background: #1db954;
-  border: 2px solid #fff;
-  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #111, 0 4px 12px rgba(0,0,0,0.6);
+  cursor: grab;
+}
+
+.rangeB::-webkit-slider-thumb {
+  background: #38bdf8;
+}
+
+.rangeB::-moz-range-thumb {
+  background: #38bdf8;
+}
+
+.marker {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.markerA {
+  color: #86efac;
+}
+
+.markerB {
+  color: #7dd3fc;
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+
+.topPlayer {
+  margin-top: 28px;
+}
+
+.topPlayerRow {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.topCover {
+  width: 180px;
+  height: 180px;
+}
+
+.topContent h2 {
+  margin: 6px 0 8px;
+  font-size: 34px;
+}
+
+.playerButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 700px) {
+  .topPlayerRow {
+    grid-template-columns: 1fr;
+  }
+
+  .topCover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1/1;
+  }
 }
